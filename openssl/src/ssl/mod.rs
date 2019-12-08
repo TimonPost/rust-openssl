@@ -105,6 +105,7 @@ pub use ssl::connector::{
     ConnectConfiguration, SslAcceptor, SslAcceptorBuilder, SslConnector, SslConnectorBuilder,
 };
 pub use ssl::error::{Error, ErrorCode, HandshakeError};
+use std::net::SocketAddr;
 
 mod bio;
 mod callbacks;
@@ -3619,6 +3620,41 @@ where
         match unsafe { ffi::SSL_stateless(self.inner.ssl.as_ptr()) } {
             1 => Ok(true),
             0 => Ok(false),
+            -1 => Err(ErrorStack::get()),
+            _ => unreachable!(),
+        }
+    }
+
+    /// Statelessly listens for new incoming DTLS connections
+    ///
+    /// Requires that cookie generation and verification callbacks were
+    /// set on the SSL context.
+    ///
+    /// Returns `Ok(true)` if a complete ClientHello containing a valid cookie
+    /// was read, in which case the handshake should be continued via
+    /// `accept`. If a HelloRetryRequest containing a fresh cookie was
+    /// transmitted, `Ok(false)` is returned instead. If the handshake cannot
+    /// proceed at all, `Err` is returned.
+    ///
+    /// This corresponds to [`DTLSv1_listen`]
+    ///
+    /// [`DTLSv1_listen`]: https://www.openssl.org/docs/manmaster/man3/SSL_stateless.html
+    #[cfg(ossl111)]
+    pub fn dtls_listen(&mut self) -> Result<Option<SocketAddr>, ErrorStack> {
+        let mut client_addr = ptr::null_mut();
+
+        match unsafe { ffi::DTLSv1_listen(self.inner.ssl.as_ptr(), client_addr) } {
+            c if c >= 1 => {
+                unsafe {
+                    let mut size = mem::zeroed();
+                    let mut buf= mem::zeroed();
+
+                    ffi::BIO_ADDR_rawaddress(client_addr, buf, size);
+
+                    panic!("{:?} {:?}", size, buf);
+                }
+            },
+            0 => Ok(None),
             -1 => Err(ErrorStack::get()),
             _ => unreachable!(),
         }

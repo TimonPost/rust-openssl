@@ -38,6 +38,13 @@ pub type bio_info_cb =
 cfg_if! {
     if #[cfg(any(ossl110, libressl280))] {
         pub enum BIO_METHOD {}
+
+        #[repr(C)]
+        pub struct BIO_ADDR {
+            pub ss: libc::sockaddr_storage,
+            pub s4: libc::sockaddr_in,
+            pub s6: libc::sockaddr_in6,
+        }
     } else {
         #[repr(C)]
         pub struct BIO_METHOD {
@@ -148,4 +155,8 @@ extern "C" {
         biom: *mut BIO_METHOD,
         destroy: unsafe extern "C" fn(*mut BIO) -> c_int,
     ) -> c_int;
+    #[cfg(any(ossl110, libressl273))]
+    pub fn BIO_ADDR_rawaddress(ap: *mut BIO_ADDR, p: *mut c_void, l: c_int) -> c_int;
+    #[cfg(any(ossl110, libressl273))]
+    pub fn BIO_new_dgram(fd: c_int, close_flag: c_int) -> BIO;
 }

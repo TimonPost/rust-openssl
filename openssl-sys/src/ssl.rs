@@ -1046,6 +1046,7 @@ extern "C" {
     pub fn SSL_stateless(s: *mut SSL) -> c_int;
     pub fn SSL_connect(ssl: *mut SSL) -> c_int;
     pub fn SSL_read(ssl: *mut SSL, buf: *mut c_void, num: c_int) -> c_int;
+    pub fn DTLSv1_listen(s: *mut SSL, peer: *mut BIO_ADDR) -> c_int;
     #[cfg(ossl111)]
     pub fn SSL_read_early_data(
         s: *mut ::SSL,

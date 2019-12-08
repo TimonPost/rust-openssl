@@ -15,7 +15,7 @@ build = "build/main.rs"
 vendored = ['openssl-src']
 
 [dependencies]
-libc = "0.2"
+libc = { version = "0.2", path = "../../libc"}
 
 [build-dependencies]
 cc = "1.0"
