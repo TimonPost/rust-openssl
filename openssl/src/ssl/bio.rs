@@ -1,7 +1,4 @@
-use ffi::{
-    self, BIO_clear_retry_flags, BIO_new, BIO_set_retry_read, BIO_set_retry_write, BIO,
-    BIO_CTRL_FLUSH,
-};
+use ffi::{self, BIO_clear_retry_flags, BIO_new, BIO_set_retry_read, BIO_set_retry_write, BIO, BIO_CTRL_FLUSH, BIO_CTRL_DGRAM_QUERY_MTU};
 use libc::{c_char, c_int, c_long, c_void, strlen};
 use std::any::Any;
 use std::io;
@@ -18,6 +15,7 @@ pub struct StreamState<S> {
     pub stream: S,
     pub error: Option<io::Error>,
     pub panic: Option<Box<dyn Any + Send>>,
+    pub dtls_mtu_size: c_long,
 }
 
 /// Safe wrapper for BIO_METHOD
@@ -39,7 +37,10 @@ pub fn new<S: Read + Write>(stream: S) -> Result<(*mut BIO, BioMethod), ErrorSta
         stream: stream,
         error: None,
         panic: None,
+        dtls_mtu_size: 0,
     });
+
+    panic!("STAMMMM");
 
     unsafe {
         let bio = cvt_p(BIO_new(method.0.get()))?;
@@ -48,6 +49,16 @@ pub fn new<S: Read + Write>(stream: S) -> Result<(*mut BIO, BioMethod), ErrorSta
 
         return Ok((bio, method));
     }
+}
+
+pub unsafe fn set_dtls_mtu_size<S>(bio: *mut BIO, mtu_size: usize) {
+    const C_LONG_SIZE: usize = std::mem::size_of::<c_long>() * 8;
+    assert!(C_LONG_SIZE <= 64);
+    const C_LONG_MAX: u64 = (1u64 << (C_LONG_SIZE - 1)) - 1;
+    if mtu_size as u64 > C_LONG_MAX {
+        panic!("Given MTU size {} can't be represented in a positive `c_long` range")
+    }
+    state::<S>(bio).dtls_mtu_size = mtu_size as c_long;
 }
 
 pub unsafe fn take_error<S>(bio: *mut BIO) -> Option<io::Error> {
@@ -134,9 +145,8 @@ unsafe extern "C" fn ctrl<S: Write>(
     _num: c_long,
     _ptr: *mut c_void,
 ) -> c_long {
+    let state = state::<S>(bio);
     if cmd == BIO_CTRL_FLUSH {
-        let state = state::<S>(bio);
-
         match catch_unwind(AssertUnwindSafe(|| state.stream.flush())) {
             Ok(Ok(())) => 1,
             Ok(Err(err)) => {
@@ -148,6 +158,8 @@ unsafe extern "C" fn ctrl<S: Write>(
                 0
             }
         }
+    } else if cmd == BIO_CTRL_DGRAM_QUERY_MTU {
+        state.dtls_mtu_size
     } else {
         0
     }

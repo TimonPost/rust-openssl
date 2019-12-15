@@ -2361,7 +2361,7 @@ impl fmt::Debug for SslRef {
 }
 
 impl SslRef {
-    fn get_raw_rbio(&self) -> *mut ffi::BIO {
+    pub fn get_raw_rbio(&self) -> *mut ffi::BIO {
         unsafe { ffi::SSL_get_rbio(self.as_ptr()) }
     }
 
@@ -3639,7 +3639,6 @@ where
     /// This corresponds to [`DTLSv1_listen`]
     ///
     /// [`DTLSv1_listen`]: https://www.openssl.org/docs/manmaster/man3/SSL_stateless.html
-    #[cfg(ossl111)]
     pub fn dtls_listen(&mut self) -> Result<Option<SocketAddr>, ErrorStack> {
         let mut client_addr = ptr::null_mut();
 
@@ -3648,7 +3647,7 @@ where
                 unsafe {
                     let mut size = mem::zeroed();
                     let mut buf= mem::zeroed();
-
+                    let mut client_addr = ptr::null_mut();
                     ffi::BIO_ADDR_rawaddress(client_addr, buf, size);
 
                     panic!("{:?} {:?}", size, buf);
@@ -3839,6 +3838,22 @@ impl<S> SslStreamBuilder<S> {
     /// Returns a shared reference to the `Ssl` object associated with this builder.
     pub fn ssl(&self) -> &SslRef {
         &self.inner.ssl
+    }
+
+
+    /// Set the DTLS MTU size.
+    ///
+    /// It will be ignored if the value is smaller than the minimum packet size
+    /// the DTLS protocol requires.
+    ///
+    /// # Panics
+    /// This function panics if the given mtu size can't be represented in a positive `c_long` range
+    pub fn set_dtls_mtu_size(&mut self, mtu_size: usize) {
+        unsafe {
+            let bio = self.inner.ssl.get_raw_rbio();
+
+            bio::set_dtls_mtu_size::<S>(bio, mtu_size);
+        }
     }
 }
 

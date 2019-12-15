@@ -8,6 +8,8 @@ pub const BIO_CTRL_EOF: c_int = 2;
 pub const BIO_CTRL_INFO: c_int = 3;
 pub const BIO_CTRL_FLUSH: c_int = 11;
 pub const BIO_C_SET_BUF_MEM_EOF_RETURN: c_int = 130;
+pub const BIO_CTRL_DGRAM_QUERY_MTU: c_int = 40;
+pub const BIO_CTRL_DGRAM_SET_RECV_TIMEOUT: c_int = 33;
 
 extern "C" {
     pub fn BIO_set_flags(b: *mut BIO, flags: c_int);
@@ -41,11 +43,12 @@ cfg_if! {
 
         #[repr(C)]
         pub struct BIO_ADDR {
-            pub ss: libc::sockaddr_storage,
-            pub s4: libc::sockaddr_in,
-            pub s6: libc::sockaddr_in6,
+            pub ss: sockaddr_storage,
+            pub s4: sockaddr_in,
+            pub s6: sockaddr_in6,
         }
-    } else {
+    }
+    else {
         #[repr(C)]
         pub struct BIO_METHOD {
             pub type_: c_int,
