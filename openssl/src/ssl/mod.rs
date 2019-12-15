@@ -3643,15 +3643,13 @@ where
         let mut client_addr = ptr::null_mut();
 
         match unsafe { ffi::DTLSv1_listen(self.inner.ssl.as_ptr(), client_addr) } {
-            c if c >= 1 => {
-                unsafe {
-                    let mut size = mem::zeroed();
-                    let mut buf= mem::zeroed();
-                    let mut client_addr = ptr::null_mut();
-                    ffi::BIO_ADDR_rawaddress(client_addr, buf, size);
+            c if c >= 1 => unsafe {
+                let mut size = mem::zeroed();
+                let mut buf = mem::zeroed();
+                let mut client_addr = ptr::null_mut();
+                ffi::BIO_ADDR_rawaddress(client_addr, buf, size);
 
-                    panic!("{:?} {:?}", size, buf);
-                }
+                panic!("{:?} {:?}", size, buf);
             },
             0 => Ok(None),
             -1 => Err(ErrorStack::get()),
@@ -3839,7 +3837,6 @@ impl<S> SslStreamBuilder<S> {
     pub fn ssl(&self) -> &SslRef {
         &self.inner.ssl
     }
-
 
     /// Set the DTLS MTU size.
     ///
