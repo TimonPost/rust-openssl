@@ -111,8 +111,10 @@ mod bio;
 mod callbacks;
 mod connector;
 mod error;
+mod addr;
 #[cfg(test)]
 mod test;
+
 
 /// Returns the OpenSSL name of a cipher corresponding to an RFC-standard cipher name.
 ///
@@ -3642,7 +3644,7 @@ where
     pub fn dtls_listen(&mut self) -> Result<Option<SocketAddr>, ErrorStack> {
         let mut client_addr = ptr::null_mut();
 
-        match unsafe { ffi::DTLSv1_listen(self.inner.ssl.as_ptr(), client_addr) } {
+        match unsafe { ffi::DTLSv1_listen(self.inner.ssl.as_ptr(), &mut client_addr) } {
             c if c >= 1 => unsafe {
                 let mut size = mem::zeroed();
                 let mut buf = mem::zeroed();

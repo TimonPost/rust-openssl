@@ -9,6 +9,7 @@ pub const BIO_CTRL_INFO: c_int = 3;
 pub const BIO_CTRL_FLUSH: c_int = 11;
 pub const BIO_C_SET_BUF_MEM_EOF_RETURN: c_int = 130;
 pub const BIO_CTRL_DGRAM_QUERY_MTU: c_int = 40;
+pub const BIO_CTRL_DGRAM_SET_CONNECTED: c_int = 32;
 pub const BIO_CTRL_DGRAM_SET_RECV_TIMEOUT: c_int = 33;
 
 extern "C" {
@@ -122,7 +123,6 @@ cfg_if! {
 
 extern "C" {
     pub fn BIO_new_socket(sock: c_int, close_flag: c_int) -> *mut BIO;
-
     #[cfg(any(ossl110, libressl273))]
     pub fn BIO_meth_new(type_: c_int, name: *const c_char) -> *mut BIO_METHOD;
     #[cfg(any(ossl110, libressl273))]

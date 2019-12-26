@@ -1,7 +1,4 @@
-use ffi::{
-    self, BIO_clear_retry_flags, BIO_new, BIO_set_retry_read, BIO_set_retry_write, BIO,
-    BIO_CTRL_DGRAM_QUERY_MTU, BIO_CTRL_FLUSH,
-};
+use ffi::{self, BIO_clear_retry_flags, BIO_new, BIO_set_retry_read, BIO_set_retry_write, BIO, BIO_CTRL_DGRAM_QUERY_MTU, BIO_CTRL_DGRAM_SET_RECV_TIMEOUT, BIO_CTRL_FLUSH, BIO_ctrl, BIO_CTRL_DGRAM_SET_CONNECTED};
 use libc::{c_char, c_int, c_long, c_void, strlen};
 use std::any::Any;
 use std::io;
@@ -43,8 +40,6 @@ pub fn new<S: Read + Write>(stream: S) -> Result<(*mut BIO, BioMethod), ErrorSta
         dtls_mtu_size: 0,
     });
 
-    panic!("STAMMMM");
-
     unsafe {
         let bio = cvt_p(BIO_new(method.0.get()))?;
         BIO_set_data(bio, Box::into_raw(state) as *mut _);
@@ -52,6 +47,10 @@ pub fn new<S: Read + Write>(stream: S) -> Result<(*mut BIO, BioMethod), ErrorSta
 
         return Ok((bio, method));
     }
+}
+
+pub unsafe fn set_ctr(bio: *mut BIO, cmd: c_int, _num: c_long, _ptr: *mut c_void) -> c_long {
+    BIO_ctrl(bio, BIO_CTRL_DGRAM_SET_CONNECTED, 0, ptr)
 }
 
 pub unsafe fn set_dtls_mtu_size<S>(bio: *mut BIO, mtu_size: usize) {
